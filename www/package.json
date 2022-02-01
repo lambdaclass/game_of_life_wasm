@@ -7,8 +7,8 @@
     "create-wasm-app": ".bin/create-wasm-app.js"
   },
   "scripts": {
-    "build": "webpack --config webpack.config.js",
-    "start": "webpack-dev-server"
+    "build": "export NODE_OPTIONS=--openssl-legacy-provider; webpack --config webpack.config.js",
+    "start": "export NODE_OPTIONS=--openssl-legacy-provider; webpack-dev-server"
   },
   "repository": {
     "type": "git",
@@ -26,6 +26,9 @@
     "url": "https://github.com/rustwasm/create-wasm-app/issues"
   },
   "homepage": "https://github.com/rustwasm/create-wasm-app#readme",
+  "dependencies": {
+    "conways-game-of-life-webassembly": "file:../pkg"
+  },
   "devDependencies": {
     "hello-wasm-pack": "^0.1.0",
     "webpack": "^4.29.3",
