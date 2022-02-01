@@ -1,69 +1,64 @@
 <div align="center">
 
-  <h1><code>wasm-pack-template</code></h1>
+  <h1><code>Conways's Game of Life - Rust & WebbAssembly</code></h1>
 
-  <strong>A template for kick starting a Rust and WebAssembly project using <a href="https://github.com/rustwasm/wasm-pack">wasm-pack</a>.</strong>
-
-  <p>
-    <a href="https://travis-ci.org/rustwasm/wasm-pack-template"><img src="https://img.shields.io/travis/rustwasm/wasm-pack-template.svg?style=flat-square" alt="Build Status" /></a>
-  </p>
-
-  <h3>
-    <a href="https://rustwasm.github.io/docs/wasm-pack/tutorials/npm-browser-packages/index.html">Tutorial</a>
-    <span> | </span>
-    <a href="https://discordapp.com/channels/442252698964721669/443151097398296587">Chat</a>
-  </h3>
-
-  <sub>Built with 🦀🕸 by <a href="https://rustwasm.github.io/">The Rust and WebAssembly Working Group</a></sub>
 </div>
 
-## About
+## Requirements
 
-[**📚 Read this template tutorial! 📚**][template-docs]
+### The Rust Toolchain
 
-This template is designed for compiling Rust libraries into WebAssembly and
-publishing the resulting package to NPM.
+You will need the standard Rust toolchain, including rustup, rustc, and cargo.
 
-Be sure to check out [other `wasm-pack` tutorials online][tutorials] for other
-templates and usages of `wasm-pack`.
+[Follow these instructions to install the Rust toolchain.](https://www.rust-lang.org/tools/install)
 
-[tutorials]: https://rustwasm.github.io/docs/wasm-pack/tutorials/index.html
-[template-docs]: https://rustwasm.github.io/docs/wasm-pack/tutorials/npm-browser-packages/index.html
+The Rust and WebAssembly experience is riding the Rust release trains to stable! That means we don't require any experimental feature flags. However, we do require Rust 1.30 or newer.
 
-## 🚴 Usage
+### `wasm-pack`
 
-### 🐑 Use `cargo generate` to Clone this Template
+`wasm-pack` is your one-stop shop for building, testing, and publishing Rust-generated WebAssembly.
 
-[Learn more about `cargo generate` here.](https://github.com/ashleygwilliams/cargo-generate)
+Use `cargo install wasm-pack` to install [wasm-pack](https://github.com/rustwasm/wasm-pack)
 
 ```
-cargo generate --git https://github.com/rustwasm/wasm-pack-template.git --name my-project
-cd my-project
+cargo install wasm-pack
 ```
 
-### 🛠️ Build with `wasm-pack build`
+### `npm`
+
+npm is a package manager for JavaScript. We will use it to install and run a JavaScript bundler and development server. At the end of the tutorial, we will publish our compiled .wasm to the npm registry.
+
+Follow these instructions to install npm.
+
+If you already have npm installed, make sure it is up to date with this command:
+
+```
+npm install npm@latest -g
+```
+
+## Build the project
+
+We use wasm-pack to orchestrate the following build steps:
+
+- Ensure that we have Rust 1.30 or newer and the wasm32-unknown-unknown target installed via rustup,
+- Compile our Rust sources into a WebAssembly .wasm binary via cargo,
+- Use wasm-bindgen to generate the JavaScript API for using our Rust-generated WebAssembly.
+
+To do all of that, run this command inside the project directory:
 
 ```
 wasm-pack build
 ```
 
-### 🔬 Test in Headless Browsers with `wasm-pack test`
+## Install the dependencies
 
 ```
-wasm-pack test --headless --firefox
+cd www/
+npm install
 ```
 
-### 🎁 Publish to NPM with `wasm-pack publish`
+## Serving Locally
 
 ```
-wasm-pack publish
+npm run start
 ```
-
-## 🔋 Batteries Included
-
-* [`wasm-bindgen`](https://github.com/rustwasm/wasm-bindgen) for communicating
-  between WebAssembly and JavaScript.
-* [`console_error_panic_hook`](https://github.com/rustwasm/console_error_panic_hook)
-  for logging panic messages to the developer console.
-* [`wee_alloc`](https://github.com/rustwasm/wee_alloc), an allocator optimized
-  for small code size.
