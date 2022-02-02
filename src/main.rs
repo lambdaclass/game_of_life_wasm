@@ -21,6 +21,7 @@ struct Universe {
     width: i32,
     height: i32,
     cells: Vec<Cell>,
+    next_tick_cells: Vec<Cell>,
 }
 
 impl Universe {
@@ -29,6 +30,7 @@ impl Universe {
             width: width,
             height: height,
             cells: vec![Cell::Dead; (width * height) as usize],
+            next_tick_cells: vec![Cell::Dead; (width * height) as usize],
         }
     }
     
@@ -44,8 +46,6 @@ impl Universe {
     }
 
     pub fn update(&mut self) {
-       let mut grid_copy = self.cells.clone();
-
         let neigh_positions = [
             (-1, -1), (-1, 0), (-1, 1),
             (0, -1), (0, 1),
@@ -73,11 +73,11 @@ impl Universe {
                         
                 }
 
-                grid_copy[cell_pos as usize] = self.cells[cell_pos as usize].update(alive_neighbours);
+                self.next_tick_cells[cell_pos as usize] = self.cells[cell_pos as usize].update(alive_neighbours);
                 
             }
         } 
-        self.cells = grid_copy;
+        self.cells = self.next_tick_cells.to_vec();
     }
 
 }
