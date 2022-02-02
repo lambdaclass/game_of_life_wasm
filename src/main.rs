@@ -34,7 +34,6 @@ impl Universe {
     
     pub fn randomize(&mut self) {
         for i in 0..self.cells.len() {
-            let coin_toss = macroquad::rand::rand();
             self.cells[i] = if macroquad::rand::rand() > (u32::MAX / 2) {Cell::Alive} else {Cell::Dead};
         }
     }
@@ -94,7 +93,8 @@ async fn main() {
         let padding = get_board_padding(cell_size);
         render_cells(cell_size, padding, &universe);
         draw_grid(cell_size, padding);
-        next_frame().await
+        next_frame().await;
+        std::thread::sleep(std::time::Duration::from_millis(100));
     }
 }
 
