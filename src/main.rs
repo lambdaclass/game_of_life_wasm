@@ -94,10 +94,16 @@ async fn main() {
         render_cells(cell_size, padding, &universe);
         draw_grid(cell_size, padding);
         next_frame().await;
-        // std::thread::sleep(std::time::Duration::from_millis(100));
+        check_restart_signal(&mut universe);
+        //std::thread::sleep(std::time::Duration::from_millis(100));
     }
 }
 
+fn check_restart_signal(universe: &mut Universe) {
+    if is_key_pressed(KeyCode::R) {
+        universe.randomize();
+    }
+}
 fn get_board_padding(cell_size: f32) -> (f32, f32) {
     (
         (screen_width() % cell_size) / 2.0,
