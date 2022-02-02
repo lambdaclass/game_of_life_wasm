@@ -31,6 +31,13 @@ impl Universe {
             cells: vec![Cell::Dead; (width * height) as usize],
         }
     }
+    
+    pub fn randomize(&mut self) {
+        for i in 0..self.cells.len() {
+            let coin_toss = macroquad::rand::rand();
+            self.cells[i] = if macroquad::rand::rand() > (u32::MAX / 2) {Cell::Alive} else {Cell::Dead};
+        }
+    }
 
     // translates x,y position in a grid to the vector position
     pub fn grid_pos(&self, x: i32, y: i32) -> i32 {
@@ -81,6 +88,7 @@ async fn main() {
     let cell_size = 20.0;
     clear_background(RED);
     let mut universe = Universe::new((screen_width() / cell_size) as i32, (screen_height() / cell_size) as i32);
+    universe.randomize();
     loop {
         universe.update();
         let padding = get_board_padding(cell_size);
