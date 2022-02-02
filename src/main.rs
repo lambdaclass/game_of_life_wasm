@@ -18,22 +18,22 @@ impl Cell {
 }
 
 struct Universe {
-    width: usize,
-    height: usize,
+    width: i32,
+    height: i32,
     cells: Vec<Cell>,
 }
 
 impl Universe {
-    pub fn new(width: usize, height: usize) -> Universe {
+    pub fn new(width: i32, height: i32) -> Universe {
         Universe {
             width: width,
             height: height,
-            cells: vec![Cell::Dead; width * height]
+            cells: vec![Cell::Dead; (width * height) as usize],
         }
     }
 
     // translates x,y position in a grid to the vector position
-    pub fn grid_pos(&self, x: usize, y: usize) -> usize {
+    pub fn grid_pos(&self, x: i32, y: i32) -> i32 {
         y * self.width + x
     }
 
@@ -52,22 +52,22 @@ impl Universe {
                 let mut alive_neighbours = 0;
                 
                 for (i, j) in neigh_positions.iter() {
-                        if  x as i32 + i < 0 || 
-                            x as i32 + i >= self.width as i32 || 
-                            y as i32 + j < 0 ||
-                            y as i32 + j >= self.height as i32 {
+                        if  x + i < 0 || 
+                            x + i >= self.width || 
+                            y + j < 0 ||
+                            y + j >= self.height {
                             continue;
                         }
                         
-                        let neigh_pos = self.grid_pos((x as i32 +i) as usize, (y as i32+j) as usize);
-                        match self.cells[neigh_pos] {
+                        let neigh_pos = self.grid_pos(x +i, y+j);
+                        match self.cells[neigh_pos as usize] {
                             Cell::Alive => alive_neighbours += 1,
                             Cell::Dead => {}
                         }
                         
                 }
 
-                grid_copy[cell_pos] = self.cells[cell_pos].update(alive_neighbours);
+                grid_copy[cell_pos as usize] = self.cells[cell_pos as usize].update(alive_neighbours);
                 
             }
         } 
@@ -80,11 +80,11 @@ impl Universe {
 async fn main() {
     let cell_size = 20.0;
     clear_background(RED);
-    let mut universe = Universe::new((screen_width() / cell_size) as usize, (screen_height() / cell_size) as usize);
+    let mut universe = Universe::new((screen_width() / cell_size) as i32, (screen_height() / cell_size) as i32);
     loop {
         universe.update();
         let padding = get_board_padding(cell_size);
-        draw_dead_cells(cell_size, padding);
+        render_cells(cell_size, padding, &universe);
         draw_grid(cell_size, padding);
         next_frame().await
     }
@@ -107,12 +107,20 @@ fn window_configuration() -> Conf {
     }
 }
 
-fn draw_dead_cells(cell_size: f32, (padding_x, padding_y): (f32,f32)) {
+fn render_cells(cell_size: f32, (padding_x, padding_y): (f32,f32), universe: &Universe) {
     let mut x = padding_x;
     let mut y = padding_y;
+    
     while x + cell_size <= screen_width() - padding_x {
         while y + cell_size <= screen_height() - padding_y {
-            draw_rectangle(x, y, cell_size, cell_size, WHITE);
+            let x_grid = (x / cell_size) as i32;
+            let y_grid = (y / cell_size) as i32;
+            let cell_position = universe.grid_pos(x_grid, y_grid);
+            let cell_color = match universe.cells[cell_position as usize] {
+                Cell::Dead => WHITE,
+                Cell::Alive => BLACK,
+            };
+            draw_rectangle(x, y, cell_size, cell_size, cell_color);
             y += cell_size;
         }
         x += cell_size;
