@@ -1,6 +1,6 @@
 use macroquad::prelude::*;
 
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Copy, Clone, PartialEq)]
 enum Cell {
     Dead = 0,
     Alive = 1,
@@ -138,5 +138,78 @@ fn draw_grid(step: f32, (padding_x, padding_y): (f32,f32)) {
     while (y + step) <= (screen_height() - padding_y) {
         draw_line(padding_x, y, screen_width() - padding_x, y, 1.0, LIGHTGRAY);
         y += step;
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[test]
+    fn test01_all_cells_are_dead_when_the_universe_starts() {
+        let cell_size = 20.0;
+        let width = 800.0;
+        let height = 600.0;
+        let universe = Universe::new((width / cell_size) as i32, (height / cell_size) as i32);
+
+        for cell in universe.cells.iter() {
+            assert_eq!(*cell, Cell::Dead);
+        }
+    }
+
+    #[test]
+    fn test02_living_cell_with_fewer_than_two_neighbours_dies() {
+        let cell_without_neighbours = Cell::Alive;
+        let cell_with_one_neighbour = Cell::Alive;
+        
+        let cell_without_neighbours = cell_without_neighbours.update(0);
+        let cell_with_one_neighbour = cell_with_one_neighbour.update(1);
+        
+        assert_eq!(cell_without_neighbours, Cell::Dead);
+        assert_eq!(cell_with_one_neighbour, Cell::Dead);
+    }
+
+    #[test]
+    fn test03_living_cell_with_two_or_three_neighbours_stay_alive() {
+        let cell_without_neighbours = Cell::Alive;
+        let cell_with_one_neighbour = Cell::Alive;
+        
+        let cell_without_neighbours = cell_without_neighbours.update(2);
+        let cell_with_one_neighbour = cell_with_one_neighbour.update(3);
+        
+        assert_eq!(cell_without_neighbours, Cell::Alive);
+        assert_eq!(cell_with_one_neighbour, Cell::Alive);
+    }
+
+    #[test]
+    fn test04_living_cell_with_more_than_three_neighbours_dies() {
+        let cell_without_neighbours = Cell::Alive;
+        let cell_with_one_neighbour = Cell::Alive;
+        
+        let cell_without_neighbours = cell_without_neighbours.update(4);
+        let cell_with_one_neighbour = cell_with_one_neighbour.update(5);
+        
+        assert_eq!(cell_without_neighbours, Cell::Dead);
+        assert_eq!(cell_with_one_neighbour, Cell::Dead);
+    }
+
+    #[test]
+    fn test05_dead_cell_with_exactly_three_neighbours_becomes_alive() {
+        let cell_with_three_neighbours = Cell::Dead;
+        
+        let cell_with_three_neighbours = cell_with_three_neighbours.update(3);
+        
+        assert_eq!(cell_with_three_neighbours, Cell::Alive);
+    }
+
+    #[test]
+    fn test06_dead_cell_with_more_or_less_than_three_neighbours_stay_dead() {
+        let cell_with_two_neighbours = Cell::Dead;
+        let cell_with_four_neighbour = Cell::Dead;
+
+        let cell_with_two_neighbours = cell_with_two_neighbours.update(2);
+        let cell_with_four_neighbour = cell_with_four_neighbour.update(4);
+
+        assert_eq!(cell_with_two_neighbours, Cell::Dead);
+        assert_eq!(cell_with_four_neighbour, Cell::Dead);
     }
 }
