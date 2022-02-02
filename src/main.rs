@@ -15,6 +15,13 @@ impl Cell {
             _ => Cell::Dead
         }
     }
+
+    pub fn flip(self) -> Cell {
+        match self {
+            Cell::Dead => Cell::Alive,
+            Cell::Alive => Cell::Dead,
+        }
+    }
 }
 
 struct Universe {
@@ -90,12 +97,20 @@ async fn main() {
     universe.randomize();
     loop {
         universe.update();
+        check_cell_state_change(&mut universe, cell_size);
         let padding = get_board_padding(cell_size);
         render_cells(cell_size, padding, &universe);
         draw_grid(cell_size, padding);
-        next_frame().await;
         check_restart_signal(&mut universe);
-        //std::thread::sleep(std::time::Duration::from_millis(100));
+        next_frame().await;
+    }
+}
+
+fn check_cell_state_change(universe: &mut Universe, cell_size: f32) {
+    if is_mouse_button_down(MouseButton::Left) {
+        let (mouse_x, mouse_y) = mouse_position();
+        let chosen_cell = universe.grid_pos((mouse_x / cell_size) as i32, (mouse_y / cell_size) as i32);
+        universe.cells[chosen_cell as usize] = universe.cells[chosen_cell as usize].flip();
     }
 }
 
