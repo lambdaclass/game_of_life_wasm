@@ -9,3 +9,6 @@ build-release:
 run: build
 	basic-http-server .
 	
+test: 
+	cargo test
+	

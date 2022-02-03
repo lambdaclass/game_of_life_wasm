@@ -2,6 +2,7 @@
 Conway's Game of Life WebAssembly
 
 # How To Run
+
 Use `cargo run` to test natively. If you want to run it using webassembly use 
 
 ```
@@ -18,3 +19,11 @@ make run
 ```
 
 instead of `make build` to build and start the server in one step.
+
+# Tests
+
+You can run the test suite using
+
+```
+make test
+```
