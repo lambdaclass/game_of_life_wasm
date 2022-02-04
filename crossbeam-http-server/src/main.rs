@@ -2,17 +2,74 @@ use std::{
     fs,
     io::{Read, Write},
     net::{TcpListener, TcpStream},
+    sync::{
+        mpsc::{channel, Receiver, Sender},
+        Arc, Mutex,
+    },
     thread,
 };
 
+pub struct ThreadPool {
+    workers: Vec<Worker>,
+    sender: Sender<Job>,
+}
+
+type Job = Box<dyn FnOnce() + Send + 'static>;
+
+impl ThreadPool {
+    pub fn new(size: usize) -> ThreadPool {
+        assert!(size > 0);
+
+        let (sender, receiver) = channel();
+
+        let receiver = Arc::new(Mutex::new(receiver));
+
+        let mut workers = Vec::with_capacity(size);
+
+        for id in 0..size {
+            workers.push(Worker::new(id, Arc::clone(&receiver)));
+        }
+
+        ThreadPool { workers, sender }
+    }
+
+    pub fn execute<F>(&self, closure_to_execute: F)
+    where
+        F: FnOnce() + Send + 'static,
+    {
+        let job = Box::new(closure_to_execute);
+
+        self.sender.send(job).unwrap();
+    }
+}
+
+struct Worker {
+    id: usize,
+    thread: thread::JoinHandle<()>,
+}
+
+impl Worker {
+    fn new(id: usize, receiver: Arc<Mutex<Receiver<Job>>>) -> Worker {
+        let thread = thread::spawn(move || {
+            while let Ok(job) = receiver.lock().unwrap().recv() {
+                println!("Worker {} got a job; executing.", id);
+                job();
+            }
+        });
+
+        Worker { id, thread }
+    }
+}
+
 fn main() {
     let listener = TcpListener::bind("127.0.0.1:8080").unwrap();
+    let pool = ThreadPool::new(4);
 
     println!("Serving on http://127.0.0.1:8080");
 
     for stream in listener.incoming() {
-        thread::spawn(|| {
-            let stream = stream.unwrap();
+        let stream = stream.unwrap();
+        pool.execute(|| {
             handle_connection(stream);
         });
     }
