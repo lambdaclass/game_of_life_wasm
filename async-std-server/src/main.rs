@@ -29,6 +29,14 @@ async fn connections_loop() -> std::io::Result<()> {
     Ok(())
 }
 
+fn get_resource_path_from_request(buf: &String) -> String {
+    let mut lines = buf.lines();
+    let request_line = lines.next().unwrap();
+    let request_line : Vec<&str> = request_line.split(" ").collect();
+    println!("{:?}", request_line);
+    format!(".{}", request_line[1])
+}
+
 async fn handle_connection(stream: TcpStream) {
     let mut stream = stream;
     
@@ -39,11 +47,15 @@ async fn handle_connection(stream: TcpStream) {
     // echo back whatever was sent
     if n > 0 {
         match std::str::from_utf8(&mut buf) {
-            Ok(request) if request.contains("GET") => {
-                let response = format!("HTTP/1.1 200 OK\r\nContent-Length:{}\r\n\r\n{}", request.len(), request);
+            Ok(request) if request.starts_with("GET") => {
+                let resource_path = get_resource_path_from_request(&String::from(request));
+                println!("resource: {}", resource_path);
+                let contents = async_std::fs::read_to_string(resource_path).await.unwrap(); 
+
+                let response = format!("HTTP/1.1 200 OK\r\nContent-Length:{}\r\n\r\n{}", contents.len(), contents);
                 stream.write(&mut response.as_bytes()).await.unwrap();
             }
-            Ok(request) if request.contains("POST") => {
+            Ok(request) if request.starts_with("POST") => {
                 let response = format!("HTTP/1.1 200 OK\r\nContent-Length:{}\r\n\r\n{}", request.len(), request);
                 stream.write(&mut response.as_bytes()).await.unwrap();
             }
