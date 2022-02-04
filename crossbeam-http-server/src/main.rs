@@ -1,4 +1,5 @@
 use std::{
+    fs,
     io::{Read, Write},
     net::{TcpListener, TcpStream},
     thread,
@@ -17,19 +18,30 @@ fn main() {
     }
 }
 
-fn handle_read(stream: &mut TcpStream) {
-    let mut buffer = [0; 1024];
-    stream.read(&mut buffer).unwrap();
+fn handle_read(stream: &mut TcpStream, buffer: &mut [u8]) {
+    stream.read(buffer).unwrap();
     println!("Request: {}", String::from_utf8_lossy(&buffer[..]));
 }
 
-fn handle_write(mut stream: TcpStream) {
-    let response = "HTTP/1.1 200 OK\r\n\r\n";
+fn handle_write(mut stream: TcpStream, buffer: &[u8]) {
+    let get = b"GET / HTTP/1.1\r\n";
+
+    let (status_line, filename) = if buffer.starts_with(get) {
+        ("HTTP/1.1 200 OK", "/Users/ivanlitteri/Lambda/rust-wasm-playground/crossbeam-http-server/templates/get.html")
+    } else {
+        ("HTTP/1.1 404 ERROR", "/Users/ivanlitteri/Lambda/rust-wasm-playground/crossbeam-http-server/templates/404.html")
+    };
+
+    let content = fs::read_to_string(filename).unwrap();
+
+    let response = format!("{}\r\n\r\n{}", status_line, content);
+
     stream.write(response.as_bytes()).unwrap();
     stream.flush().unwrap();
 }
 
 fn handle_connection(mut stream: TcpStream) {
-    handle_read(&mut stream);
-    handle_write(stream);
+    let mut buffer = [0; 1024];
+    handle_read(&mut stream, &mut buffer);
+    handle_write(stream, &buffer);
 }
