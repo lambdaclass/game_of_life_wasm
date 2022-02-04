@@ -18,6 +18,11 @@ async fn connections_loop() -> std::io::Result<()> {
     let mut incoming = listener.incoming();
     while let Some(stream) = incoming.next().await {
         let stream = stream?;
+        if let Ok(addr) = stream.peer_addr() {
+            println!("Incoming connection from: {:?}", addr);
+        } else {
+            println!("Incoming connection");
+        }
         task::spawn(handle_connection(stream));
     }
 
@@ -33,12 +38,18 @@ async fn handle_connection(stream: TcpStream) {
 
     // echo back whatever was sent
     if n > 0 {
-        stream.write_all(&mut buf[..n]).await.unwrap();
-    }
-
-    if let Ok(addr) = stream.peer_addr() {
-        println!("Incoming connection from: {:?}", addr);
-    } else {
-        println!("Incoming connection");
+        match std::str::from_utf8(&mut buf) {
+            Ok(request) if request.contains("GET") => {
+                let response = format!("HTTP/1.1 200 OK\r\nContent-Length:{}\r\n\r\n{}", request.len(), request);
+                stream.write(&mut response.as_bytes()).await.unwrap();
+            }
+            Ok(request) if request.contains("POST") => {
+                let response = format!("HTTP/1.1 200 OK\r\nContent-Length:{}\r\n\r\n{}", request.len(), request);
+                stream.write(&mut response.as_bytes()).await.unwrap();
+            }
+            _ => {
+                println!("Request could not be parsed");
+            }
+        }
     }
 }
