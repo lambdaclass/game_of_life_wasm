@@ -1,6 +1,7 @@
 use std::{
     io::{Read, Write},
     net::{TcpListener, TcpStream},
+    thread,
 };
 
 fn main() {
@@ -9,8 +10,10 @@ fn main() {
     println!("Serving on http://127.0.0.1:8080");
 
     for stream in listener.incoming() {
-        let stream = stream.unwrap();
-        handle_connection(stream);
+        thread::spawn(move || {
+            let stream = stream.unwrap();
+            handle_connection(stream);
+        });
     }
 }
 
