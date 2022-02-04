@@ -16,11 +16,16 @@ async fn main() {
 
 async fn handle_new_connection(mut stream: TcpStream) {
     let mut buffer = [0; 1024];
-    let response: String;
     let (read_part, mut write_part) = stream.split();
     let mut reader = BufReader::new(read_part);
     reader.read(&mut buffer).await.unwrap();
     let request = String::from_utf8(buffer.to_vec()).unwrap();
+    let response = create_response(request).await;
+    write_part.write_all(response.as_bytes()).await.unwrap();
+}
+
+async fn create_response(request: String) -> String {
+    let response: String;
     if request.contains("GET") {
         response = "HTTP/1.1 200 OK\r\nContent-Length: 2\r\n\r\nOK".to_string();
     } else if request.contains("POST") {
@@ -33,7 +38,7 @@ async fn handle_new_connection(mut stream: TcpStream) {
     } else {
         response = "HTTP/1.1 400".to_string();
     }
-    write_part.write_all(response.as_bytes()).await.unwrap();
+    response
 }
 
 async fn get_body_from_request(request: String) -> String {
