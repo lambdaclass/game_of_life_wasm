@@ -11,7 +11,7 @@ fn main() {
     println!("Serving on http://127.0.0.1:8080");
 
     for stream in listener.incoming() {
-        thread::spawn(move || {
+        thread::spawn(|| {
             let stream = stream.unwrap();
             handle_connection(stream);
         });
