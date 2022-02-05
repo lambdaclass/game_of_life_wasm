@@ -102,7 +102,7 @@ fn main() {
 
     println!("Serving on http://127.0.0.1:8080");
 
-    for stream in listener.incoming().take(2) {
+    for stream in listener.incoming() {
         let stream = stream.unwrap();
         pool.execute(|| {
             handle_connection(stream);
