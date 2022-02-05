@@ -116,7 +116,7 @@ fn handle_read(stream: &mut TcpStream, buffer: &mut [u8]) {
     println!("Request: {}", String::from_utf8_lossy(&buffer[..]));
 }
 
-fn handle_write(mut stream: TcpStream, buffer: &[u8]) {
+fn create_response(buffer: &[u8]) -> String {
     let (status_line, filename) = if buffer.starts_with(b"GET") {
         ("HTTP/1.1 200 OK", "/Users/ivanlitteri/Lambda/rust-wasm-playground/crossbeam-http-server/templates/get.html")
     } else if buffer.starts_with(b"POST") {
@@ -134,7 +134,11 @@ fn handle_write(mut stream: TcpStream, buffer: &[u8]) {
         contents
     );
 
-    stream.write_all(response.as_bytes()).unwrap();
+    response
+}
+
+fn handle_write(mut stream: TcpStream, buffer: &[u8]) {
+    stream.write_all(create_response(buffer).as_bytes()).unwrap();
     stream.flush().unwrap();
 }
 
