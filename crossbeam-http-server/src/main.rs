@@ -110,6 +110,7 @@ fn main() {
     }
 }
 
+#[allow(clippy::unused_io_amount)]
 fn handle_read(stream: &mut TcpStream, buffer: &mut [u8]) {
     stream.read(buffer).unwrap();
     println!("Request: {}", String::from_utf8_lossy(&buffer[..]));
@@ -133,7 +134,7 @@ fn handle_write(mut stream: TcpStream, buffer: &[u8]) {
         contents
     );
 
-    stream.write(response.as_bytes()).unwrap();
+    stream.write_all(response.as_bytes()).unwrap();
     stream.flush().unwrap();
 }
 
