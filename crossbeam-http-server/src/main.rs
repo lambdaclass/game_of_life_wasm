@@ -116,17 +116,22 @@ fn handle_read(stream: &mut TcpStream, buffer: &mut [u8]) {
 }
 
 fn handle_write(mut stream: TcpStream, buffer: &[u8]) {
-    let get = b"GET / HTTP/1.1\r\n";
-
-    let (status_line, filename) = if buffer.starts_with(get) {
+    let (status_line, filename) = if buffer.starts_with(b"GET") {
         ("HTTP/1.1 200 OK", "/Users/ivanlitteri/Lambda/rust-wasm-playground/crossbeam-http-server/templates/get.html")
+    } else if buffer.starts_with(b"POST") {
+        ("HTTP/1.1 200 OK", "/Users/ivanlitteri/Lambda/rust-wasm-playground/crossbeam-http-server/templates/post.html")
     } else {
-        ("HTTP/1.1 404 ERROR", "/Users/ivanlitteri/Lambda/rust-wasm-playground/crossbeam-http-server/templates/404.html")
+        ("HTTP/1.1 404 NOT FOUND", "/Users/ivanlitteri/Lambda/rust-wasm-playground/crossbeam-http-server/templates/404.html")
     };
 
-    let content = fs::read_to_string(filename).unwrap();
+    let contents = fs::read_to_string(filename).unwrap();
 
-    let response = format!("{}\r\n\r\n{}", status_line, content);
+    let response = format!(
+        "{}\r\nContent-Length: {}\r\n\r\n{}",
+        status_line,
+        contents.len(),
+        contents
+    );
 
     stream.write(response.as_bytes()).unwrap();
     stream.flush().unwrap();
