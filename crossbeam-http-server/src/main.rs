@@ -14,83 +14,24 @@ enum Message {
     Terminate,
 }
 
-pub struct ThreadPool {
-    workers: Vec<Worker>,
-    sender: Sender<Message>,
-}
-
 type Job = Box<dyn FnOnce() + Send + 'static>;
 
-impl ThreadPool {
-    pub fn new(size: usize) -> ThreadPool {
-        assert!(size > 0);
-
-        let (sender, receiver) = channel();
-
-        let receiver = Arc::new(Mutex::new(receiver));
-
-        let mut workers = Vec::with_capacity(size);
-
-        for id in 0..size {
-            workers.push(Worker::new(id, Arc::clone(&receiver)));
-        }
-
-        ThreadPool { workers, sender }
-    }
-
-    pub fn execute<F>(&self, closure_to_execute: F)
-    where
-        F: FnOnce() + Send + 'static,
-    {
-        let job = Box::new(closure_to_execute);
-
-        self.sender.send(Message::NewJob(job)).unwrap();
-    }
-}
-
-impl Drop for ThreadPool {
-    fn drop(&mut self) {
-        println!("Sending terminate message to all workers.");
-
-        for _ in &self.workers {
-            self.sender.send(Message::Terminate).unwrap();
-        }
-
-        println!("Shutting down all workers.");
-
-        for worker in &mut self.workers {
-            println!("Shutting down worker {}", worker.id);
-            if let Some(thread) = worker.thread.take() {
-                thread.join().unwrap();
-            }
-        }
-    }
-}
-
 struct Worker {
-    id: usize,
     thread: Option<thread::JoinHandle<()>>,
 }
 
 impl Worker {
-    fn new(id: usize, receiver: Arc<Mutex<Receiver<Message>>>) -> Worker {
+    fn new(receiver: Arc<Mutex<Receiver<Message>>>) -> Worker {
         let thread = thread::spawn(move || loop {
             let message = receiver.lock().unwrap().recv().unwrap();
 
             match message {
-                Message::NewJob(job) => {
-                    println!("Worker {} got a job; executing.", id);
-                    job();
-                }
-                Message::Terminate => {
-                    println!("Worker {} was told to termiante.", id);
-                    break;
-                }
+                Message::NewJob(job) => job(),
+                Message::Terminate => break
             }
         });
 
         Worker {
-            id,
             thread: Some(thread),
         }
     }
@@ -98,22 +39,60 @@ impl Worker {
 
 fn main() {
     let listener = TcpListener::bind("127.0.0.1:8080").unwrap();
-    let pool = ThreadPool::new(4);
-
     println!("Serving on http://127.0.0.1:8080");
+
+    let (sender, workers) = create_thread_pool(4);
 
     for stream in listener.incoming() {
         let stream = stream.unwrap();
-        pool.execute(|| {
-            handle_connection(stream);
-        });
+        execute(&sender, Box::new(|| handle_connection(stream)));
+    }
+
+    shut_down_workers(sender, workers);
+}
+
+fn create_thread_pool(size: usize) -> (Sender<Message>, Vec<Worker>) {
+    assert!(size > 0);
+
+    let (sender, receiver) = channel();
+
+    let receiver = Arc::new(Mutex::new(receiver));
+
+    let mut workers = Vec::with_capacity(size);
+
+    for _ in 0..size {
+        workers.push(Worker::new(Arc::clone(&receiver)));
+    }
+
+    (sender, workers)
+}
+
+fn execute(sender: &Sender<Message>, job: Job) {
+    sender.send(Message::NewJob(job)).unwrap();
+}
+
+fn shut_down_workers(sender: Sender<Message>, mut workers: Vec<Worker>) {
+    send_terminate_to_workers(sender, &workers);
+    hold_workers_until_finished(&mut workers);
+}
+
+fn send_terminate_to_workers(sender: Sender<Message>, workers: &[Worker]) {
+    for _ in workers {
+        sender.send(Message::Terminate).unwrap();
+    }
+}
+
+fn hold_workers_until_finished(workers: &mut Vec<Worker>) {
+    for worker in workers {
+        if let Some(thread) = worker.thread.take() {
+            thread.join().unwrap();
+        }
     }
 }
 
 #[allow(clippy::unused_io_amount)]
 fn handle_read(stream: &mut TcpStream, buffer: &mut [u8]) {
     stream.read(buffer).unwrap();
-    println!("Request: {}", String::from_utf8_lossy(&buffer[..]));
 }
 
 fn create_response(buffer: &[u8]) -> String {
@@ -138,7 +117,9 @@ fn create_response(buffer: &[u8]) -> String {
 }
 
 fn handle_write(mut stream: TcpStream, buffer: &[u8]) {
-    stream.write_all(create_response(buffer).as_bytes()).unwrap();
+    stream
+        .write_all(create_response(buffer).as_bytes())
+        .unwrap();
     stream.flush().unwrap();
 }
 
