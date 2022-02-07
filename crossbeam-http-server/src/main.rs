@@ -2,85 +2,101 @@ use std::{
     fs,
     io::{Read, Write},
     net::{TcpListener, TcpStream},
-    sync::{
-        mpsc::{channel, Receiver, Sender},
-        Arc, Mutex,
-    },
-    thread,
 };
 
-enum Message {
-    NewJob(Job),
-    Terminate,
-}
+mod thread_pool {
+    use job::Job;
+    use std::sync::{
+        mpsc::{channel, Receiver, Sender},
+        Arc, Mutex,
+    };
+    use worker::{create_worker, Worker};
 
-type Job = Box<dyn FnOnce() + Send + 'static>;
-type Worker = Option<thread::JoinHandle<()>>;
+    pub enum Message {
+        NewJob(Job),
+        Terminate,
+    }
+
+    pub fn create_thread_pool(size: usize) -> (Sender<Message>, Vec<Worker>) {
+        assert!(size > 0);
+        let (sender, receiver) = channel();
+        let workers = create_workers(receiver, size);
+        (sender, workers)
+    }
+    
+    fn create_workers(receiver: Receiver<Message>, size: usize) -> Vec<Worker> {
+        let receiver = Arc::new(Mutex::new(receiver));
+        let mut workers = Vec::with_capacity(size);
+
+        for _ in 0..size {
+            workers.push(create_worker(Arc::clone(&receiver)));
+        }
+
+        workers
+    }
+
+    pub fn execute_job(sender: &Sender<Message>, job: Job) {
+        sender.send(Message::NewJob(job)).unwrap();
+    }
+
+    pub fn shut_down_workers(sender: Sender<Message>, mut workers: Vec<Worker>) {
+        send_terminate_to_workers(sender, &workers);
+        hold_workers_until_finished(&mut workers);
+    }
+
+    fn send_terminate_to_workers(sender: Sender<Message>, workers: &[Worker]) {
+        for _ in workers {
+            sender.send(Message::Terminate).unwrap();
+        }
+    }
+
+    fn hold_workers_until_finished(workers: &mut Vec<Worker>) {
+        for worker in workers {
+            if let Some(thread) = worker.take() {
+                thread.join().unwrap();
+            }
+        }
+    }
+
+    mod worker {
+        use super::Message;
+        use std::{
+            sync::{mpsc::Receiver, Arc, Mutex},
+            thread,
+        };
+        pub type Worker = Option<thread::JoinHandle<()>>;
+
+        pub fn create_worker(receiver: Arc<Mutex<Receiver<Message>>>) -> Worker {
+            let thread = thread::spawn(move || loop {
+                let message = receiver.lock().unwrap().recv().unwrap();
+
+                match message {
+                    Message::NewJob(job) => job(),
+                    Message::Terminate => break,
+                }
+            });
+
+            Some(thread)
+        }
+    }
+
+    mod job {
+        pub type Job = Box<dyn FnOnce() + Send + 'static>;
+    }
+}
 
 fn main() {
     let listener = TcpListener::bind("127.0.0.1:8080").unwrap();
     println!("Serving on http://127.0.0.1:8080");
 
-    let (sender, workers) = create_thread_pool(4);
+    let (sender, workers) = thread_pool::create_thread_pool(4);
 
     for stream in listener.incoming() {
         let stream = stream.unwrap();
-        execute(&sender, Box::new(|| handle_connection(stream)));
+        thread_pool::execute_job(&sender, Box::new(|| handle_connection(stream)));
     }
 
-    shut_down_workers(sender, workers);
-}
-
-fn create_worker(receiver: Arc<Mutex<Receiver<Message>>>) -> Worker {
-    let thread = thread::spawn(move || loop {
-        let message = receiver.lock().unwrap().recv().unwrap();
-
-        match message {
-            Message::NewJob(job) => job(),
-            Message::Terminate => break,
-        }
-    });
-
-    Some(thread)
-}
-
-fn create_thread_pool(size: usize) -> (Sender<Message>, Vec<Worker>) {
-    assert!(size > 0);
-
-    let (sender, receiver) = channel();
-
-    let receiver = Arc::new(Mutex::new(receiver));
-
-    let mut workers = Vec::with_capacity(size);
-
-    for _ in 0..size {
-        workers.push(create_worker(Arc::clone(&receiver)));
-    }
-
-    (sender, workers)
-}
-
-fn execute(sender: &Sender<Message>, job: Job) {
-    sender.send(Message::NewJob(job)).unwrap();
-}
-
-fn shut_down_workers(sender: Sender<Message>, mut workers: Vec<Worker>) {
-    send_terminate_to_workers(sender, &workers);
-    hold_workers_until_finished(&mut workers);
-}
-
-fn send_terminate_to_workers(sender: Sender<Message>, workers: &[Worker]) {
-    for _ in workers {
-        sender.send(Message::Terminate).unwrap();
-    }
-}
-
-fn hold_workers_until_finished(workers: &mut Vec<Worker>) {
-    for worker in workers {
-        if let Some(thread) = worker.take() {
-            thread.join().unwrap();
-        }
-    }
+    thread_pool::shut_down_workers(sender, workers);
 }
 
 #[allow(clippy::unused_io_amount)]
