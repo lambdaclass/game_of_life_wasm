@@ -23,15 +23,12 @@ mod thread_pool {
         let workers = create_workers(receiver, size);
         (sender, workers)
     }
-    
+
     fn create_workers(receiver: Receiver<Message>, size: usize) -> Vec<Worker> {
         let receiver = Arc::new(Mutex::new(receiver));
-        let mut workers = Vec::with_capacity(size);
-
-        for _ in 0..size {
-            workers.push(create_worker(Arc::clone(&receiver)));
-        }
-
+        let workers = (0..size)
+            .map(|_| create_worker(Arc::clone(&receiver)))
+            .collect();
         workers
     }
 
