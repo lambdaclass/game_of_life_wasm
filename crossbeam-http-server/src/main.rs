@@ -5,11 +5,8 @@ use std::{
 };
 
 mod thread_pool {
+    use crossbeam::channel::{unbounded, Receiver, Sender};
     use job::Job;
-    use std::sync::{
-        mpsc::{channel, Receiver, Sender},
-        Arc, Mutex,
-    };
     use worker::{create_worker, Worker};
 
     pub enum Message {
@@ -19,20 +16,16 @@ mod thread_pool {
 
     pub fn create_thread_pool(size: usize) -> (Sender<Message>, Vec<Worker>) {
         assert!(size > 0);
-        let (sender, receiver) = channel();
+        let (sender, receiver) = unbounded();
         let workers = create_workers(receiver, size);
         (sender, workers)
     }
 
     fn create_workers(receiver: Receiver<Message>, size: usize) -> Vec<Worker> {
-        let receiver = Arc::new(Mutex::new(receiver));
-        let workers = (0..size)
-            .map(|_| create_worker(Arc::clone(&receiver)))
-            .collect();
-        workers
+        (0..size).map(|_| create_worker(receiver.clone())).collect()
     }
 
-    pub fn execute_job(sender: &Sender<Message>, job: Job) {
+    pub fn execute_job(sender: Sender<Message>, job: Job) {
         sender.send(Message::NewJob(job)).unwrap();
     }
 
@@ -56,16 +49,13 @@ mod thread_pool {
     }
 
     mod worker {
-        use super::Message;
-        use std::{
-            sync::{mpsc::Receiver, Arc, Mutex},
-            thread,
-        };
+        use super::{Message, Receiver};
+        use std::thread;
         pub type Worker = Option<thread::JoinHandle<()>>;
 
-        pub fn create_worker(receiver: Arc<Mutex<Receiver<Message>>>) -> Worker {
+        pub fn create_worker(receiver: Receiver<Message>) -> Worker {
             let thread = thread::spawn(move || loop {
-                let message = receiver.lock().unwrap().recv().unwrap();
+                let message = receiver.recv().unwrap();
 
                 match message {
                     Message::NewJob(job) => job(),
@@ -90,7 +80,7 @@ fn main() {
 
     for stream in listener.incoming() {
         let stream = stream.unwrap();
-        thread_pool::execute_job(&sender, Box::new(|| handle_connection(stream)));
+        thread_pool::execute_job(sender.clone(), Box::new(|| handle_connection(stream)));
     }
 
     thread_pool::shut_down_workers(sender, workers);
