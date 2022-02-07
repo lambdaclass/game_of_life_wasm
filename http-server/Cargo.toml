@@ -6,12 +6,12 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-# async-std = { version = "1.10", optional = true } 
+tokio = {version = "1", features = ["full"], optional = true}
 
-#[features]
-# build-async-std = ["async-std"]
+[features]
+build-tokio = ["tokio"]
 
-#[[bin]]
-#name = "async-std-server"
-#required-features = ["build-async-std"]
-#path = "src/async-std-sv/bin/main.rs"
+[[bin]]
+name = "tokio-http-server"
+required-features = ["build-tokio"]
+path = "./src/tokio-http-server/main.rs"
