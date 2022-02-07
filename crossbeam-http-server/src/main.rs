@@ -15,27 +15,7 @@ enum Message {
 }
 
 type Job = Box<dyn FnOnce() + Send + 'static>;
-
-struct Worker {
-    thread: Option<thread::JoinHandle<()>>,
-}
-
-impl Worker {
-    fn new(receiver: Arc<Mutex<Receiver<Message>>>) -> Worker {
-        let thread = thread::spawn(move || loop {
-            let message = receiver.lock().unwrap().recv().unwrap();
-
-            match message {
-                Message::NewJob(job) => job(),
-                Message::Terminate => break
-            }
-        });
-
-        Worker {
-            thread: Some(thread),
-        }
-    }
-}
+type Worker = Option<thread::JoinHandle<()>>;
 
 fn main() {
     let listener = TcpListener::bind("127.0.0.1:8080").unwrap();
@@ -51,6 +31,19 @@ fn main() {
     shut_down_workers(sender, workers);
 }
 
+fn create_worker(receiver: Arc<Mutex<Receiver<Message>>>) -> Worker {
+    let thread = thread::spawn(move || loop {
+        let message = receiver.lock().unwrap().recv().unwrap();
+
+        match message {
+            Message::NewJob(job) => job(),
+            Message::Terminate => break,
+        }
+    });
+
+    Some(thread)
+}
+
 fn create_thread_pool(size: usize) -> (Sender<Message>, Vec<Worker>) {
     assert!(size > 0);
 
@@ -61,7 +54,7 @@ fn create_thread_pool(size: usize) -> (Sender<Message>, Vec<Worker>) {
     let mut workers = Vec::with_capacity(size);
 
     for _ in 0..size {
-        workers.push(Worker::new(Arc::clone(&receiver)));
+        workers.push(create_worker(Arc::clone(&receiver)));
     }
 
     (sender, workers)
@@ -84,7 +77,7 @@ fn send_terminate_to_workers(sender: Sender<Message>, workers: &[Worker]) {
 
 fn hold_workers_until_finished(workers: &mut Vec<Worker>) {
     for worker in workers {
-        if let Some(thread) = worker.thread.take() {
+        if let Some(thread) = worker.take() {
             thread.join().unwrap();
         }
     }
