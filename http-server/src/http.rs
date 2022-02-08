@@ -24,19 +24,19 @@ pub struct HttpRequest {
 
 pub fn parse_http_request(request: &[u8]) -> Result<HttpRequest> {
     // turn bytes into a string
-    let request_str = std::str::from_utf8(&request).unwrap();
+    let request_str = std::str::from_utf8(request).unwrap();
     let mut lines = request_str.lines();
 
     // read request-line
     let request_line = lines.next().unwrap();
-    let request_line: Vec<&str> = request_line.split(" ").collect();
+    let request_line: Vec<&str> = request_line.split(' ').collect();
 
     if request_line.len() != 3 {
         panic!("resource line could not be parsed");
     }
 
     let method = request_line[0];
-    let mut request_method = None;
+    let request_method: Option<HttpMethod>;
     if method == "GET" {
         request_method = Some(HttpMethod::GET);
     } else if method == "HEAD" {
@@ -56,20 +56,20 @@ pub fn parse_http_request(request: &[u8]) -> Result<HttpRequest> {
 
     // read headers (case-insensitive)
     let mut request_headers = HashMap::new();
-    while let Some(line) = lines.next() {
+    for line in lines.by_ref() {
         if line.is_empty() {
             break;
         }
 
-        if let Some(pos) = line.find(":") {
+        if let Some(pos) = line.find(':') {
             let (key, value) = line.split_at(pos);
             request_headers.insert(key.to_lowercase(), String::from(value));
         }
     }
 
     let metadata = HttpMetadata {
-        version: version,
-        resource_path: resource_path,
+        version,
+        resource_path,
         headers: request_headers,
     };
     // read content
@@ -78,7 +78,7 @@ pub fn parse_http_request(request: &[u8]) -> Result<HttpRequest> {
 
     Ok(HttpRequest {
         method: request_method.unwrap(),
-        metadata: metadata,
-        content: content,
+        metadata,
+        content,
     })
 }
