@@ -1,10 +1,10 @@
+use crossbeam::channel::{unbounded, Receiver, Sender};
+use http::{parse_http_request, HttpMethod, HttpRequest};
 use std::{
     io::{Read, Write},
     net::{TcpListener, TcpStream},
     thread,
 };
-use crossbeam::channel::{unbounded, Receiver, Sender};
-use http::{parse_http_request, HttpRequest, HttpMethod};
 
 enum Message {
     NewJob(Job),
@@ -120,9 +120,7 @@ fn create_response(request: HttpRequest) -> String {
                 request.content
             )
         }
-        _ => {
-            "HTTP/1.1 404 NOT FOUND".to_string()
-        }
+        _ => "HTTP/1.1 404 NOT FOUND".to_string(),
     }
 }
 
