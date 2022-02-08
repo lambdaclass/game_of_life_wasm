@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use std::io::Result;
 
-enum HttpMethod {
+pub enum HttpMethod {
     GET,
     HEAD,
     POST,
@@ -10,34 +10,32 @@ enum HttpMethod {
     DELETE,
 }
 
-struct HttpMetadata {
-   version: String,
-   resource_path: String,
-   headers: HashMap<String, String>,
+pub struct HttpMetadata {
+    version: String,
+    resource_path: String,
+    headers: HashMap<String, String>,
 }
 
-struct HttpRequest {
-    method: HttpMethod,
-    metadata: HttpMetadata,
-    content: String,
+pub struct HttpRequest {
+    pub method: HttpMethod,
+    pub metadata: HttpMetadata,
+    pub content: String,
 }
 
-fn parse_http_request(request: &[u8]) 
-    -> Result<HttpRequest>
-{
+pub fn parse_http_request(request: &[u8]) -> Result<HttpRequest> {
     // turn bytes into a string
     let request_str = std::str::from_utf8(&request).unwrap();
     let mut lines = request_str.lines();
-    
+
     // read request-line
     let request_line = lines.next().unwrap();
-    let request_line : Vec<&str> = request_line.split(" ").collect();
+    let request_line: Vec<&str> = request_line.split(" ").collect();
 
     if request_line.len() != 3 {
         panic!("resource line could not be parsed");
     }
 
-    let method = request_line[0]; 
+    let method = request_line[0];
     let mut request_method = None;
     if method == "GET" {
         request_method = Some(HttpMethod::GET);
@@ -55,7 +53,7 @@ fn parse_http_request(request: &[u8])
 
     let resource_path = String::from(request_line[1]);
     let version = String::from(request_line[2]);
-    
+
     // read headers (case-insensitive)
     let mut request_headers = HashMap::new();
     while let Some(line) = lines.next() {
@@ -63,12 +61,9 @@ fn parse_http_request(request: &[u8])
             break;
         }
 
-        if let Some(pos) =  line.find(":") {
+        if let Some(pos) = line.find(":") {
             let (key, value) = line.split_at(pos);
-            request_headers.insert(
-                key.to_lowercase(),
-                String::from(value)
-            );
+            request_headers.insert(key.to_lowercase(), String::from(value));
         }
     }
 
@@ -77,9 +72,9 @@ fn parse_http_request(request: &[u8])
         resource_path: resource_path,
         headers: request_headers,
     };
-    
     // read content
     let content = lines.collect::<Vec<&str>>().join("\n");
+    let content = content.trim_matches(char::from(0)).to_string();
 
     Ok(HttpRequest {
         method: request_method.unwrap(),
