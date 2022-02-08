@@ -42,7 +42,7 @@ async fn handle_connection(stream: TcpStream) -> std::io::Result<()> {
 
     // echo back whatever was sent
     if n > 0 {
-        let parsed_http = http::parse_http(&buf)?;
+        let parsed_http = http::parse_http_request(&buf)?;
         match parsed_http.method {
             HttpMethod::GET => {
                 let resource_path = &parsed_http.metadata.resource_path;

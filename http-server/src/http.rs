@@ -11,9 +11,9 @@ pub enum HttpMethod {
 }
 
 pub struct HttpMetadata {
-    version: String,
-    resource_path: String,
-    headers: HashMap<String, String>,
+    pub version: String,
+    pub resource_path: String,
+    pub headers: HashMap<String, String>,
 }
 
 pub struct HttpRequest {
