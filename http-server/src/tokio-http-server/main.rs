@@ -18,12 +18,11 @@ async fn main() {
 
 async fn handle_new_connection(mut stream: TcpStream) {
     let mut buffer = [0; 1024];
-    let (read_part, mut write_part) = stream.split();
-    let mut reader = BufReader::new(read_part);
+    let mut reader = BufReader::new(&mut stream);
     reader.read(&mut buffer).await.unwrap();
     let request = parse_http_request(&buffer).unwrap();
     let response = create_response(request).await;
-    write_part.write_all(response.as_bytes()).await.unwrap();
+    stream.write_all(response.as_bytes()).await.unwrap();
 }
 
 async fn create_response(request: HttpRequest) -> String {
