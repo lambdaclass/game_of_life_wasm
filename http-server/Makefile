@@ -6,8 +6,11 @@ async-server.PID:
 async-stop: async-server.PID
 	kill `cat $<` && rm $<
 
-clean:
+async-clean:
 	rm async-server.PID
+
+crossbeam-start:
+	cargo run --features="build-crossbeam" --bin crossbeam-http-server
 
 tokio-server:
 	cargo run --features build-tokio --bin tokio-http-server
