@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use std::io::Result;
 
-enum HttpMethod {
+pub enum HttpMethod {
     GET,
     HEAD,
     POST,
@@ -10,19 +10,19 @@ enum HttpMethod {
     DELETE,
 }
 
-struct HttpMetadata {
-   version: String,
-   resource_path: String,
-   headers: HashMap<String, String>,
+pub struct HttpMetadata {
+   pub version: String,
+   pub resource_path: String,
+   pub headers: HashMap<String, String>,
 }
 
-struct HttpRequest {
-    method: HttpMethod,
-    metadata: HttpMetadata,
-    content: String,
+pub struct HttpRequest {
+    pub method: HttpMethod,
+    pub metadata: HttpMetadata,
+    pub content: String,
 }
 
-fn parse_http_request(request: &[u8]) 
+pub fn parse_http(request: &[u8]) 
     -> Result<HttpRequest>
 {
     // turn bytes into a string
