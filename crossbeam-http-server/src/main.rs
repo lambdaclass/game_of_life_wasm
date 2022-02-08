@@ -20,17 +20,10 @@ pub struct ThreadPool {
 type Job = Box<dyn FnOnce() + Send + 'static>;
 
 impl ThreadPool {
-    pub fn new(size: usize) -> ThreadPool {
-        assert!(size > 0);
-
+    pub fn new(workers_count: usize) -> ThreadPool {
+        assert!(workers_count > 0);
         let (sender, receiver) = unbounded();
-
-        let mut workers = Vec::with_capacity(size);
-
-        for _ in 0..size {
-            workers.push(Worker::new(receiver.clone()));
-        }
-
+        let workers = ThreadPool::create_workers(receiver, workers_count);
         ThreadPool { workers, sender }
     }
 
@@ -39,22 +32,30 @@ impl ThreadPool {
         F: FnOnce() + Send + 'static,
     {
         let job = Box::new(closure_to_execute);
-
         self.sender.send(Message::NewJob(job)).unwrap();
     }
-}
 
-impl Drop for ThreadPool {
-    fn drop(&mut self) {
-        for _ in &self.workers {
-            self.sender.send(Message::Terminate).unwrap();
-        }
+    fn create_workers(receiver: Receiver<Message>, size: usize) -> Vec<Worker> {
+        (0..size).map(|_| Worker::new(receiver.clone())).collect()
+    }
 
+    fn tell_workers_to_terminate(&self) {
+        (0..self.workers.len()).for_each(|_| self.sender.send(Message::Terminate).unwrap());
+    }
+
+    fn hold_on_until_all_workers_are_done(&mut self) {
         for worker in &mut self.workers {
             if let Some(thread) = worker.thread.take() {
                 thread.join().unwrap();
             }
         }
+    }
+}
+
+impl Drop for ThreadPool {
+    fn drop(&mut self) {
+        self.tell_workers_to_terminate();
+        self.hold_on_until_all_workers_are_done();
     }
 }
 
