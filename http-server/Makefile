@@ -8,3 +8,6 @@ async-stop: async-server.PID
 
 clean:
 	rm async-server.PID
+
+tokio-server:
+	cargo run --features build-tokio --bin tokio-http-server
