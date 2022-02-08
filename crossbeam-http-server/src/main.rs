@@ -2,12 +2,10 @@ use std::{
     fs,
     io::{Read, Write},
     net::{TcpListener, TcpStream},
-    sync::{
-        mpsc::{channel, Receiver, Sender},
-        Arc, Mutex,
-    },
     thread,
 };
+
+use crossbeam::channel::{unbounded, Receiver, Sender};
 
 enum Message {
     NewJob(Job),
@@ -25,14 +23,12 @@ impl ThreadPool {
     pub fn new(size: usize) -> ThreadPool {
         assert!(size > 0);
 
-        let (sender, receiver) = channel();
-
-        let receiver = Arc::new(Mutex::new(receiver));
+        let (sender, receiver) = unbounded();
 
         let mut workers = Vec::with_capacity(size);
 
         for id in 0..size {
-            workers.push(Worker::new(id, Arc::clone(&receiver)));
+            workers.push(Worker::new(id, receiver.clone()));
         }
 
         ThreadPool { workers, sender }
@@ -73,9 +69,9 @@ struct Worker {
 }
 
 impl Worker {
-    fn new(id: usize, receiver: Arc<Mutex<Receiver<Message>>>) -> Worker {
+    fn new(id: usize, receiver: Receiver<Message>) -> Worker {
         let thread = thread::spawn(move || loop {
-            let message = receiver.lock().unwrap().recv().unwrap();
+            let message = receiver.recv().unwrap();
 
             match message {
                 Message::NewJob(job) => {
