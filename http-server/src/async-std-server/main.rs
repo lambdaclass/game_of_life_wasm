@@ -1,7 +1,10 @@
 use async_std::prelude::*;
 
-use http::{
-    HttpMethod,
+use commons::{
+    http,
+    http::{
+        HttpMethod,
+    },
 };
 
 // to use block on instead of the attribute macro
