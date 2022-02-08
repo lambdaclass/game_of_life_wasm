@@ -1,11 +1,10 @@
 use std::{
-    fs,
     io::{Read, Write},
     net::{TcpListener, TcpStream},
     thread,
 };
-
 use crossbeam::channel::{unbounded, Receiver, Sender};
+use http::{parse_http_request, HttpRequest, HttpMethod};
 
 enum Message {
     NewJob(Job),
@@ -104,30 +103,33 @@ fn handle_read(stream: &mut TcpStream, buffer: &mut [u8]) {
     println!("Request: {}", String::from_utf8_lossy(&buffer[..]));
 }
 
-fn create_response(buffer: &[u8]) -> String {
-    let (status_line, filename) = if buffer.starts_with(b"GET") {
-        ("HTTP/1.1 200 OK", "/Users/ivanlitteri/Lambda/rust-wasm-playground/crossbeam-http-server/templates/get.html")
-    } else if buffer.starts_with(b"POST") {
-        ("HTTP/1.1 200 OK", "/Users/ivanlitteri/Lambda/rust-wasm-playground/crossbeam-http-server/templates/post.html")
-    } else {
-        ("HTTP/1.1 404 NOT FOUND", "/Users/ivanlitteri/Lambda/rust-wasm-playground/crossbeam-http-server/templates/404.html")
-    };
-
-    let contents = fs::read_to_string(filename).unwrap();
-
-    let response = format!(
-        "{}\r\nContent-Length: {}\r\n\r\n{}",
-        status_line,
-        contents.len(),
-        contents
-    );
-
-    response
+fn create_response(request: HttpRequest) -> String {
+    match request.method {
+        HttpMethod::GET => {
+            format!(
+                "{}\r\nContent-Length: {}\r\n\r\n{}",
+                "HTTP/1.1 200 OK",
+                request.content.len(),
+                request.content
+            )
+        }
+        HttpMethod::POST => {
+            format!(
+                "{}\r\nContent-Length: {}\r\n\r\n{}",
+                "HTTP/1.1 200 OK",
+                request.content.len(),
+                request.content
+            )
+        }
+        _ => {
+            "HTTP/1.1 404 NOT FOUND".to_string()
+        }
+    }
 }
 
-fn handle_write(mut stream: TcpStream, buffer: &[u8]) {
+fn handle_write(mut stream: TcpStream, request: HttpRequest) {
     stream
-        .write_all(create_response(buffer).as_bytes())
+        .write_all(create_response(request).as_bytes())
         .unwrap();
     stream.flush().unwrap();
 }
@@ -135,5 +137,6 @@ fn handle_write(mut stream: TcpStream, buffer: &[u8]) {
 fn handle_connection(mut stream: TcpStream) {
     let mut buffer = [0; 1024];
     handle_read(&mut stream, &mut buffer);
-    handle_write(stream, &buffer);
+    let request = parse_http_request(&buffer).unwrap();
+    handle_write(stream, request);
 }
