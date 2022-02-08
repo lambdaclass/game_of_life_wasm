@@ -5,6 +5,11 @@ edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
+
+[lib]
+name = "http"
+path = "src/http.rs"
+
 [dependencies]
 # async-std = { version = "1.10", optional = true } 
 
@@ -14,4 +19,4 @@ edition = "2021"
 #[[bin]]
 #name = "async-std-server"
 #required-features = ["build-async-std"]
-#path = "src/async-std-sv/bin/main.rs"
+#path = "src/async-std-server/main.rs"
