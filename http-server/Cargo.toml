@@ -11,12 +11,12 @@ name = "http"
 path = "src/http.rs"
 
 [dependencies]
-# async-std = { version = "1.10", optional = true } 
+crossbeam = { version = "0.8", optional = true }
 
-#[features]
-# build-async-std = ["async-std"]
+[features]
+build-crossbeam = ["crossbeam"]
 
-#[[bin]]
-#name = "async-std-server"
-#required-features = ["build-async-std"]
-#path = "src/async-std-server/main.rs"
+[[bin]]
+name = "crossbeam-http-server"
+crossbeam = ["build-crossbeam"]
+path = "./src/crossbeam-http-server/main.rs"
