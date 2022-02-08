@@ -5,3 +5,6 @@ async-server.PID:
 	
 async-stop: async-server.PID
 	kill `cat $<` && rm $<
+
+clean:
+	rm async-server.PID

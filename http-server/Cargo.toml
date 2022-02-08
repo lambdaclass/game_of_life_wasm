@@ -11,12 +11,12 @@ name = "http"
 path = "src/http.rs"
 
 [dependencies]
-# async-std = { version = "1.10", optional = true } 
+async-std = { version = "1.10", optional = true } 
 
-#[features]
-# build-async-std = ["async-std"]
+[features]
+build-async-std = ["async-std"]
 
-#[[bin]]
-#name = "async-std-server"
-#required-features = ["build-async-std"]
-#path = "src/async-std-server/main.rs"
+[[bin]]
+name = "async-std-server"
+required-features = ["build-async-std"]
+path = "./src/async-std-server/main.rs"
