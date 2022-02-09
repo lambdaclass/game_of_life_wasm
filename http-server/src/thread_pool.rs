@@ -29,12 +29,16 @@ impl ThreadPool {
         self.sender.send(Message::NewJob(job)).unwrap();
     }
 
+    fn terminate(&self) {
+        self.sender.send(Message::Terminate).unwrap()
+    }
+
     fn create_workers(receiver: Receiver<Message>, size: usize) -> Vec<Worker> {
         (0..size).map(|_| Worker::new(receiver.clone())).collect()
     }
 
     fn tell_workers_to_terminate(&self) {
-        (0..self.workers.len()).for_each(|_| self.sender.send(Message::Terminate).unwrap());
+        (0..self.workers.len()).for_each(|_| self.terminate());
     }
 
     fn hold_on_until_all_workers_are_done(&mut self) {
