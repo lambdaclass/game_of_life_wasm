@@ -12,5 +12,8 @@ async-clean:
 crossbeam-start:
 	cargo run --features="build-crossbeam" --bin crossbeam-http-server
 
+crossbeam-build:
+	cargo build --features="build-crossbeam" --bin crossbeam-http-server
+
 tokio-server:
 	cargo run --features build-tokio --bin tokio-http-server
