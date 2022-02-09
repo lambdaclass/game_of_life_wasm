@@ -4,6 +4,7 @@ use commons::{
     http,
     http::{
         HttpMethod,
+        HttpRequest,
     },
 };
 
@@ -36,6 +37,32 @@ async fn connections_loop() -> std::io::Result<()> {
     Ok(())
 }
 
+async fn build_response(req: &HttpRequest) -> String {
+    match req.method {
+        HttpMethod::GET => {
+            let resource_path = &req.metadata.resource_path;
+            let fs_path = format!(".{}", resource_path);
+            println!("resource: {}", &fs_path);
+            let contents = async_std::fs::read_to_string(fs_path).await.unwrap(); 
+
+            format!("HTTP/1.1 200 OK\r\nContent-Length:{}\r\n\r\n{}", 
+                contents.len(), 
+                contents
+            )
+        }
+        HttpMethod::POST => {
+            format!("HTTP/1.1 200 OK\r\nContent-Length:{}\r\n\r\n{}", 
+                req.content.len(), 
+                req.content
+            )
+        }
+        _ => {
+            println!("Request could not be parsed");
+            String::from("HTTP/1.1 404 NOT FOUND")
+        }
+    }
+}
+
 async fn handle_connection(stream: TcpStream) -> std::io::Result<()> {
     let mut stream = stream;
     
@@ -46,25 +73,8 @@ async fn handle_connection(stream: TcpStream) -> std::io::Result<()> {
     // echo back whatever was sent
     if n > 0 {
         let parsed_http = http::parse_http_request(&buf)?;
-        match parsed_http.method {
-            HttpMethod::GET => {
-                let resource_path = &parsed_http.metadata.resource_path;
-                let fs_path = format!(".{}", resource_path);
-                println!("resource: {}", &fs_path);
-                let contents = async_std::fs::read_to_string(fs_path).await?; 
-
-                let response = format!("HTTP/1.1 200 OK\r\nContent-Length:{}\r\n\r\n{}", contents.len(), contents);
-                stream.write(&mut response.as_bytes()).await?;
-                println!("Sent:\n{}", &response);
-            }
-            HttpMethod::POST => {
-                let response = format!("HTTP/1.1 200 OK\r\nContent-Length:{}\r\n\r\n{}", parsed_http.content.len(), parsed_http.content);
-                stream.write(&mut response.as_bytes()).await?;
-            }
-            _ => {
-                println!("Request could not be parsed");
-            }
-        }
+        let response =  build_response(&parsed_http).await;
+        stream.write(&mut response.as_bytes()).await?;
     }
 
     Ok(())
