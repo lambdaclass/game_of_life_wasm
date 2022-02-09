@@ -13,6 +13,8 @@ crossbeam-start:
 	cargo run --features="build-crossbeam" --bin crossbeam-http-server
 
 crossbeam-build:
+	cargo clippy --features="build-crossbeam" --bin crossbeam-http-server
+	cargo fmt 
 	cargo build --features="build-crossbeam" --bin crossbeam-http-server
 
 tokio-server:
