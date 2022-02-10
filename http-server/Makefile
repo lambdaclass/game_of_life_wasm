@@ -1,4 +1,7 @@
-async-start: async-server.PID
+async-start:
+	cargo run --features="build-async-std" --bin async-std-server
+
+async-start-bg: async-server.PID
 
 async-server.PID:
 	cargo run --features="build-async-std" --bin async-std-server & echo $$! > $@

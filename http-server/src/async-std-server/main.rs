@@ -68,14 +68,12 @@ async fn handle_connection(stream: TcpStream) -> std::io::Result<()> {
     
     // read incoming data (currently blocking)
     let mut buf = [0; 2048];
-    let n = stream.read(&mut buf).await?;
+    stream.read(&mut buf).await?;
 
     // echo back whatever was sent
-    if n > 0 {
-        let parsed_http = http::parse_http_request(&buf)?;
-        let response =  build_response(&parsed_http).await;
-        stream.write(&mut response.as_bytes()).await?;
-    }
+    let parsed_http = http::parse_http_request(&buf)?;
+    let response =  build_response(&parsed_http).await;
+    stream.write_all(&mut response.as_bytes()).await?;
 
     Ok(())
 }
