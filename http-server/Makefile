@@ -1,16 +1,8 @@
+async-build:
+	cargo build --features="build-async-std" --bin async-std-server
+
 async-start:
 	cargo run --features="build-async-std" --bin async-std-server
-
-async-start-bg: async-server.PID
-
-async-server.PID:
-	cargo run --features="build-async-std" --bin async-std-server & echo $$! > $@
-	
-async-stop: async-server.PID
-	kill `cat $<` && rm $<
-
-async-clean:
-	rm async-server.PID
 
 crossbeam-start:
 	cargo run --features="build-crossbeam" --bin crossbeam-http-server
