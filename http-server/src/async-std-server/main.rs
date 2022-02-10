@@ -1,7 +1,6 @@
 use async_std::prelude::*;
 
-use commons::{
-    http,
+use commons::{ http,
     http::{
         HttpMethod,
         HttpRequest,
@@ -43,7 +42,7 @@ async fn build_response(req: &HttpRequest) -> String {
             let resource_path = &req.metadata.resource_path;
             let fs_path = format!(".{}", resource_path);
             println!("resource: {}", &fs_path);
-            let contents = async_std::fs::read_to_string(fs_path).await.unwrap(); 
+            let contents = async_std::fs::read(fs_path).await.unwrap(); 
 
             format!("HTTP/1.1 200 OK\r\nContent-Length:{}\r\n\r\n{}", 
                 contents.len(), 
