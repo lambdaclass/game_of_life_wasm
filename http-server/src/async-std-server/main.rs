@@ -36,28 +36,29 @@ async fn connections_loop() -> std::io::Result<()> {
     Ok(())
 }
 
-async fn build_response(req: &HttpRequest) -> String {
+async fn build_response(req: &HttpRequest) -> std::io::Result<Vec<u8>> {
     match req.method {
         HttpMethod::GET => {
             let resource_path = &req.metadata.resource_path;
             let fs_path = format!(".{}", resource_path);
             println!("resource: {}", &fs_path);
-            let contents = async_std::fs::read(fs_path).await.unwrap(); 
+            let mut contents = async_std::fs::read(fs_path).await?; 
 
-            format!("HTTP/1.1 200 OK\r\nContent-Length:{}\r\n\r\n{}", 
-                contents.len(), 
-                contents
-            )
+            let mut resp = format!("HTTP/1.1 200 OK\r\nContent-Length:{}\r\n\r\n", 
+                contents.len()
+            ).into_bytes();
+            resp.append(&mut contents);
+            Ok(resp)
         }
         HttpMethod::POST => {
-            format!("HTTP/1.1 200 OK\r\nContent-Length:{}\r\n\r\n{}", 
+            Ok(format!("HTTP/1.1 200 OK\r\nContent-Length:{}\r\n\r\n{}", 
                 req.content.len(), 
                 req.content
-            )
+            ).into_bytes())
         }
         _ => {
             println!("Request could not be parsed");
-            String::from("HTTP/1.1 404 NOT FOUND")
+            Ok(String::from("HTTP/1.1 404 NOT FOUND").into_bytes())
         }
     }
 }
@@ -71,8 +72,8 @@ async fn handle_connection(stream: TcpStream) -> std::io::Result<()> {
 
     // echo back whatever was sent
     let parsed_http = http::parse_http_request(&buf)?;
-    let response =  build_response(&parsed_http).await;
-    stream.write_all(&mut response.as_bytes()).await?;
+    let mut response =  build_response(&parsed_http).await?;
+    stream.write_all(&mut response).await?;
 
     Ok(())
 }
