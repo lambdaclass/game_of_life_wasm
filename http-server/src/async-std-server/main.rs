@@ -49,7 +49,7 @@ async fn build_response(req: &HttpRequest) -> std::io::Result<Vec<u8>> {
                 "Content-type:application/wasm" 
             } else { "" };
 
-            let mut resp = format!("HTTP/1.1 200 OK\r\n{}/r/nContent-Length:{}\r\n\r\n", 
+            let mut resp = format!("HTTP/1.1 200 OK\r\n{}\r\nContent-Length:{}\r\n\r\n", 
                 &header,
                 contents.len()
             ).into_bytes();
