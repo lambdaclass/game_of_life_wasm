@@ -16,7 +16,6 @@ impl WorkStealingScheduler {
         for _ in 0..thread_count {
             let work_pool = work_pool.clone();
             scope.spawn(move |_| {
-                let work_pool = work_pool;
                 loop {
                     if let Some(job) = work_pool.find_job().take() {
                         job();
