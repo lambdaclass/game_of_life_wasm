@@ -1,22 +1,25 @@
-use commons::http::{parse_http_request, HttpMethod, HttpRequest};
-use commons::thread_pool::ThreadPool;
 use std::{
     io::{Read, Write},
     net::{TcpListener, TcpStream},
 };
+use commons::http::{parse_http_request, HttpMethod, HttpRequest};
+use commons::work_stealing_scheduler::WorkStealingScheduler;
+
 
 fn main() {
-    let listener = TcpListener::bind("127.0.0.1:8080").unwrap();
-    let pool = ThreadPool::new(4);
+    crossbeam::scope(|scope| {
+        let listener = TcpListener::bind("127.0.0.1:8080").unwrap();
+        let thread_count = 4;
+        let work_stealing_scheduler = WorkStealingScheduler::new(scope, thread_count);
 
-    println!("Serving on http://127.0.0.1:8080");
-
-    for stream in listener.incoming() {
-        let stream = stream.unwrap();
-        pool.execute(|| {
-            handle_connection(stream);
-        });
-    }
+        for stream in listener.incoming() {
+            let stream = stream.unwrap();
+            work_stealing_scheduler.push_job(Box::new(|| {
+                handle_connection(stream);
+            }));
+        }
+    })
+    .unwrap();
 }
 
 #[allow(clippy::unused_io_amount)]
