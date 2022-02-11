@@ -2,68 +2,37 @@ use commons::http::{parse_http_request, HttpMethod, HttpRequest};
 use std::{
     io::{Read, Write},
     net::{TcpListener, TcpStream},
-    sync::{Arc, Mutex},
-    iter,
 };
 
-use crossbeam::deque::{Injector, Stealer, Worker, Steal};
-
-type Job = Box<dyn FnOnce() + Send + 'static>;
+use commons::work_stealing_scheduler::WorkPool;
 
 fn main() {
     crossbeam::scope(|scope| {
         let listener = TcpListener::bind("127.0.0.1:8080").unwrap();
         let thread_count = 4;
-        let injector = Arc::new(Injector::<Job>::new());
-        let stealers: Arc<Mutex<Vec<Stealer<Job>>>> = Arc::new(Mutex::new(vec![]));
-        let mut workers = Vec::new();
-    
+        let work_pool = WorkPool::new();
+
         for _ in 0..thread_count {
-            let global = injector.clone();
-            let stealers = stealers.clone();
+            let work_pool = work_pool.clone();
             let thread = scope.spawn(move |_| {
-                let global = global;
-                let stealers = stealers;
-                let local = Worker::new_fifo();
-                stealers.lock().unwrap().push(local.stealer());
+                let work_pool = work_pool;
                 loop {
-                    if let Some(job) = get_work(&local, &global, &stealers).take() {
+                    if let Some(job) = work_pool.find_job().take() {
                         job();
                     }
                 }
             });
-            workers.push(thread);
         }
-    
+
         for stream in listener.incoming() {
             let stream = stream.unwrap();
             let job = Box::new(|| {
                 handle_connection(stream);
             });
-            injector.push(job);
+            work_pool.push_job(job);
         }
-    }).unwrap();
-}
-
-fn get_work(
-    local: &Worker<Job>,
-    global: &Arc<Injector<Job>>,
-    stealers: &Arc<Mutex<Vec<Stealer<Job>>>>,
-) -> Option<Job> {
-    local.pop().or_else(|| {
-        iter::repeat_with(|| {
-            global.steal_batch_and_pop(local).or_else(|| {
-                stealers
-                    .lock()
-                    .unwrap()
-                    .iter()
-                    .map(|stealer| stealer.steal())
-                    .collect()
-            })
-        })
-        .find(|steal| !steal.is_retry())
-        .and_then(|steal| steal.success())
     })
+    .unwrap();
 }
 
 #[allow(clippy::unused_io_amount)]
