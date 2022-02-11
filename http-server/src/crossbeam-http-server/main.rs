@@ -14,9 +14,6 @@ fn main() {
 
         for stream in listener.incoming() {
             let stream = stream.unwrap();
-            let job = Box::new(|| {
-                handle_connection(stream);
-            });
             work_stealing_scheduler.push_job(Box::new(|| {
                 handle_connection(stream);
             }));
