@@ -6,6 +6,32 @@ use std::{
 
 type Job = Box<dyn FnOnce() + Send + 'static>;
 
+pub struct WorkStealingScheduler {
+    main: WorkPool,
+}
+
+impl WorkStealingScheduler {
+    pub fn new(scope: &crossbeam::thread::Scope, thread_count: usize) -> Self {
+        let work_pool = WorkPool::new();
+        for _ in 0..thread_count {
+            let work_pool = work_pool.clone();
+            scope.spawn(move |_| {
+                let work_pool = work_pool;
+                loop {
+                    if let Some(job) = work_pool.find_job().take() {
+                        job();
+                    }
+                }
+            });
+        }
+        Self { main: work_pool }
+    }
+
+    pub fn push_job(&self, job: Job) {
+        self.main.push_job(job);
+    }
+}
+
 pub struct WorkPool {
     global: Arc<Injector<Job>>,
     local: Worker<Job>,

@@ -4,32 +4,22 @@ use std::{
     net::{TcpListener, TcpStream},
 };
 
-use commons::work_stealing_scheduler::WorkPool;
+use commons::work_stealing_scheduler::WorkStealingScheduler;
 
 fn main() {
     crossbeam::scope(|scope| {
         let listener = TcpListener::bind("127.0.0.1:8080").unwrap();
         let thread_count = 4;
-        let work_pool = WorkPool::new();
-
-        for _ in 0..thread_count {
-            let work_pool = work_pool.clone();
-            let thread = scope.spawn(move |_| {
-                let work_pool = work_pool;
-                loop {
-                    if let Some(job) = work_pool.find_job().take() {
-                        job();
-                    }
-                }
-            });
-        }
+        let work_stealing_scheduler = WorkStealingScheduler::new(scope, thread_count);
 
         for stream in listener.incoming() {
             let stream = stream.unwrap();
             let job = Box::new(|| {
                 handle_connection(stream);
             });
-            work_pool.push_job(job);
+            work_stealing_scheduler.push_job(Box::new(|| {
+                handle_connection(stream);
+            }));
         }
     })
     .unwrap();
