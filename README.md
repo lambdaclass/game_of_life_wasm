@@ -1,2 +1,1 @@
-# conways-game-of-life-webassembly
-Conway's Game of Life WebAssembly
+# Conway's Game of Life in WebAssembly
