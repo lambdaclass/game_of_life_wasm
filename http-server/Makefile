@@ -12,5 +12,10 @@ crossbeam-build:
 	cargo fmt 
 	cargo build --features="build-crossbeam" --bin crossbeam-http-server
 
-tokio-server:
+tokio-start:
 	cargo run --features build-tokio --bin tokio-http-server
+
+tokio-build:
+	cargo clippy --features build-tokio --bin tokio-http-server
+	cargo fmt
+	cargo build --features build-tokio --bin tokio-http-server
