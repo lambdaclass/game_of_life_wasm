@@ -15,11 +15,9 @@ impl WorkStealingScheduler {
         let work_pool = WorkPool::new();
         for _ in 0..thread_count {
             let work_pool = work_pool.clone();
-            scope.spawn(move |_| {
-                loop {
-                    if let Some(job) = work_pool.find_job().take() {
-                        job();
-                    }
+            scope.spawn(move |_| loop {
+                if let Some(job) = work_pool.find_job().take() {
+                    job();
                 }
             });
         }
