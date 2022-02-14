@@ -46,10 +46,10 @@ async fn build_response(req: &HttpRequest) -> std::io::Result<Vec<u8>> {
             let mut contents = async_std::fs::read(fs_path).await?; 
 
             let header = if resource_path.ends_with(".wasm") {
-                "Content-type:application/wasm" 
+                "Content-type:application/wasm\r\n" 
             } else { "" };
 
-            let mut resp = format!("HTTP/1.1 200 OK\r\n{}\r\nContent-Length:{}\r\n\r\n", 
+            let mut resp = format!("HTTP/1.1 200 OK\r\n{}Content-Length:{}\r\n\r\n", 
                 &header,
                 contents.len()
             ).into_bytes();
