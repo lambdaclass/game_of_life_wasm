@@ -8,4 +8,4 @@ First, you have to choose what server do you want to use for hosting the wasm ga
 - `make start_async_std_web`
 
 This will compile the wasm file, the web server binary, and bundle everything in the target directory. In the end it will start the server up as shown here:
-![](img/how_to_run.gif)
+![](assets/how_to_run.gif)
