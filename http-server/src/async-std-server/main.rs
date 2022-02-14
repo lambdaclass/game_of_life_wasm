@@ -80,8 +80,8 @@ async fn handle_connection(stream: TcpStream) -> std::io::Result<()> {
 
     // echo back whatever was sent
     let parsed_http = http::parse_http_request(&buf)?;
-    let mut response = build_response(&parsed_http).await?;
-    stream.write_all(&mut response).await?;
+    let response = build_response(&parsed_http).await?;
+    stream.write_all(&response).await?;
 
     Ok(())
 }
