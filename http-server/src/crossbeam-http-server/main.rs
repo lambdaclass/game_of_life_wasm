@@ -1,10 +1,9 @@
+use commons::http::{parse_http_request, HttpMethod, HttpRequest};
+use commons::work_stealing_scheduler::WorkStealingScheduler;
 use std::{
     io::{Read, Write},
     net::{TcpListener, TcpStream},
 };
-use commons::http::{parse_http_request, HttpMethod, HttpRequest};
-use commons::work_stealing_scheduler::WorkStealingScheduler;
-
 
 fn main() {
     crossbeam::scope(|scope| {

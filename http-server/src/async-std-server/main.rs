@@ -1,10 +1,8 @@
 use async_std::prelude::*;
 
-use commons::{ http,
-    http::{
-        HttpMethod,
-        HttpRequest,
-    },
+use commons::{
+    http,
+    http::{HttpMethod, HttpRequest},
 };
 
 // to use block on instead of the attribute macro
@@ -40,28 +38,32 @@ async fn build_response(req: &HttpRequest) -> std::io::Result<Vec<u8>> {
     match req.method {
         HttpMethod::GET => {
             let resource_path = &req.metadata.resource_path;
-            
+
             let fs_path = format!(".{}", resource_path);
             println!("resource: {}", &fs_path);
-            let mut contents = async_std::fs::read(fs_path).await?; 
+            let mut contents = async_std::fs::read(fs_path).await?;
 
             let header = if resource_path.ends_with(".wasm") {
-                "Content-type:application/wasm\r\n" 
-            } else { "" };
+                "Content-type:application/wasm\r\n"
+            } else {
+                ""
+            };
 
-            let mut resp = format!("HTTP/1.1 200 OK\r\n{}Content-Length:{}\r\n\r\n", 
+            let mut resp = format!(
+                "HTTP/1.1 200 OK\r\n{}Content-Length:{}\r\n\r\n",
                 &header,
                 contents.len()
-            ).into_bytes();
+            )
+            .into_bytes();
             resp.append(&mut contents);
             Ok(resp)
         }
-        HttpMethod::POST => {
-            Ok(format!("HTTP/1.1 200 OK\r\nContent-Length:{}\r\n\r\n{}", 
-                req.content.len(), 
-                req.content
-            ).into_bytes())
-        }
+        HttpMethod::POST => Ok(format!(
+            "HTTP/1.1 200 OK\r\nContent-Length:{}\r\n\r\n{}",
+            req.content.len(),
+            req.content
+        )
+        .into_bytes()),
         _ => {
             println!("Request could not be parsed");
             Ok(String::from("HTTP/1.1 404 NOT FOUND").into_bytes())
@@ -71,14 +73,14 @@ async fn build_response(req: &HttpRequest) -> std::io::Result<Vec<u8>> {
 
 async fn handle_connection(stream: TcpStream) -> std::io::Result<()> {
     let mut stream = stream;
-    
+
     // read incoming data (currently blocking)
     let mut buf = [0; 2048];
     stream.read(&mut buf).await?;
 
     // echo back whatever was sent
     let parsed_http = http::parse_http_request(&buf)?;
-    let mut response =  build_response(&parsed_http).await?;
+    let mut response = build_response(&parsed_http).await?;
     stream.write_all(&mut response).await?;
 
     Ok(())
