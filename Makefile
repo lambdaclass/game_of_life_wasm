@@ -1,8 +1,11 @@
+# The arg corresponds to the folder name of the server to run contained in http-server/src
 define start_web
 	cd target && \
 	./$(1)
 endef
 
+# The first arg corresponds to the build directive of the selected server declared in the makefile of the http-server folder
+# The second arg corresponds to the folder name of the server to run contained in http-server/src
 define build_server
 	cd http-server && \
 	echo 'Building Server' && \
