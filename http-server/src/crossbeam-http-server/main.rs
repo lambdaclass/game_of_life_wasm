@@ -5,7 +5,6 @@ use std::{
 use commons::http::{parse_http_request, HttpMethod, HttpRequest};
 use commons::work_stealing_scheduler::WorkStealingScheduler;
 
-
 fn main() {
     crossbeam::scope(|scope| {
         let listener = TcpListener::bind("127.0.0.1:8080").unwrap();
@@ -27,32 +26,42 @@ fn handle_read(stream: &mut TcpStream, buffer: &mut [u8]) {
     stream.read(buffer).unwrap();
 }
 
-fn create_response(request: HttpRequest) -> String {
+fn create_response(request: HttpRequest) -> std::io::Result<Vec<u8>> {
     match request.method {
         HttpMethod::GET => {
-            format!(
-                "{}\r\nContent-Length: {}\r\n\r\n{}",
-                "HTTP/1.1 200 OK",
-                request.content.len(),
-                request.content
+            let resource_path = &request.metadata.resource_path;
+            let fs_path = format!(".{}", resource_path);
+            let mut contents = std::fs::read(fs_path).unwrap();
+            let header = if resource_path.ends_with(".wasm") {
+                "Content-type:application/wasm\r\n"
+            } else {
+                ""
+            };
+            let mut response = format!(
+                "HTTP/1.1 200 OK\r\n{}Content-Length:{}\r\n\r\n",
+                &header,
+                contents.len()
             )
+            .into_bytes();
+            response.append(&mut contents);
+            Ok(response)
         }
-        HttpMethod::POST => {
-            format!(
-                "{}\r\nContent-Length: {}\r\n\r\n{}",
-                "HTTP/1.1 200 OK",
-                request.content.len(),
-                request.content
-            )
+        HttpMethod::POST => Ok(format!(
+            "HTTP/1.1 200 OK\r\nContent-Length:{}\r\n\r\n{}",
+            request.content.len(),
+            request.content
+        )
+        .into_bytes()),
+        _ => {
+            println!("Request could not be parsed");
+            Ok(String::from("HTTP/1.1 404 NOT FOUND").into_bytes())
         }
-        _ => "HTTP/1.1 404 NOT FOUND".to_string(),
     }
 }
 
 fn handle_write(mut stream: TcpStream, request: HttpRequest) {
-    stream
-        .write_all(create_response(request).as_bytes())
-        .unwrap();
+    let mut response = create_response(request).unwrap();
+    stream.write_all(&response).unwrap();
     stream.flush().unwrap();
 }
 
