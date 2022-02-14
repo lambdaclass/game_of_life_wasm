@@ -75,7 +75,7 @@ async fn handle_connection(stream: TcpStream) -> std::io::Result<()> {
     let mut stream = stream;
 
     // read incoming data (currently blocking)
-    let mut buf = [0; 2048];
+    let mut buf = [0; 1024];
     stream.read(&mut buf).await?;
 
     // echo back whatever was sent

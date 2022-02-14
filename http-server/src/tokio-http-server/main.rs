@@ -19,7 +19,7 @@ async fn main() {
 }
 
 async fn handle_new_connection(mut stream: TcpStream) -> std::io::Result<()> {
-    let mut buffer = [0; 2048];
+    let mut buffer = [0; 1024];
     let mut reader = BufReader::new(&mut stream);
     reader.read(&mut buffer).await.unwrap();
     let request = parse_http_request(&buffer).unwrap();
