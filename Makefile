@@ -4,10 +4,9 @@ build-web: target server wasm
 server:
 	cd http-server && \
 	echo 'Building Server' && \
-	pwd && \
-	make async-build && \
+	make $(BC) && \
 	echo 'Moving binary into target' && \
-	cp target/debug/async-std-server ../target
+	cp target/debug/$(SF) ../target
 
 wasm:
 	cd conways-game-of-life-rust-webassembly && \
@@ -19,8 +18,7 @@ wasm:
 
 start-web: build-web
 	cd target && \
-	./async-std-server
-
+	./$(SF)
 
 target:
 	mkdir -p target
