@@ -1,4 +1,4 @@
-# Rust + Wasm playground
+# Conway Game of Life plus WebAssembly and basic HTTP Server
 
 ## How to run
 
