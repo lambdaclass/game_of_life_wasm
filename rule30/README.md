@@ -1,6 +1,6 @@
 ## Game of life - Rule 30
 
-Game of life variation based on Elliot Waite's [video]https://www.youtube.com/watch?v=IK7nBOLYzdE), but implemented using Rust and Macroquad.
+Game of life variation based on Elliot Waite's [video](https://www.youtube.com/watch?v=IK7nBOLYzdE), but implemented using Rust and Macroquad.
 
 ![](game_of_life.gif)
 
