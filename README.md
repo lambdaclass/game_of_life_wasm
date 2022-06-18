@@ -12,7 +12,7 @@ This will compile the wasm file, the web server binary, and bundle everything in
 
 ## Game of life - Rule 30
 
-Game of life variation based on Elliot Waite's [video](https://www.youtube.com/watch?v=IK7nBOLYzdE), but implemented using Rust and Macroquad.
+Game of life variation based on Elliot Waite's [video](https://www.youtube.com/watch?v=IK7nBOLYzdE), but implemented using Rust and Macroquad can be found [here](./rule30/src/main.rs).
 
 ![](rule30/game_of_life.gif)
 
